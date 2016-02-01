@@ -101,7 +101,7 @@ public class AtomicChangesTest {
 
     }
 
-    private static class ParentClass {
+    static class ParentClass {
 
         private String id;
         private String name;
@@ -137,7 +137,7 @@ public class AtomicChangesTest {
 
     }
 
-    private static class SubClass extends ParentClass {
+    static class SubClass extends ParentClass {
 
         private int age;
 

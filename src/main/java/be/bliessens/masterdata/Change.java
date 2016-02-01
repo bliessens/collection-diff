@@ -31,11 +31,21 @@ public abstract class Change {
         public Deletion(Object subject) {
             super(subject);
         }
+
+        @Override
+        public String toString() {
+            return "Deleted entry " + getSubject().toString();
+        }
     }
 
     static class Addition extends Change {
         public Addition(Object subject) {
             super(subject);
+        }
+
+        @Override
+        public String toString() {
+            return "Added entry " + getSubject().toString();
         }
     }
 
@@ -55,7 +65,7 @@ public abstract class Change {
         @Override
         public String toString() {
             return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-                    .append("type", type)
+                    .append("type", type.getName())
                     .append("fieldName", fieldName)
                     .append("oldValue", oldValue)
                     .append("newValue", newValue)
