@@ -9,21 +9,33 @@ import org.apache.commons.lang3.builder.DiffResult;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public final class AtomicChanges {
 
     AtomicChanges() {
     }
 
-    public static <T> List<? extends Change> changes(final Collection<T> sourceCollection, final Collection<T> targetCollection) {
-        List<Change> changes = new LinkedList<>();
+    /**
+     * Find the differences between source and target.<br/>
+     * The resulting list of <code>Change</code>s should be applied to <em>source</em>  in order to obtain <em>target</em>.
+     * <p>
+     * The algorithm replies on proper <code>equals()</code> and <code>hashCode()</code> implementations in T to find
+     * identical entries in <em>source</em> and <em>target</em>.
+     *
+     * @param source the reference collection
+     * @param target the collection for which we are interested in what is different when compared to <em>source</em>
+     * @param fields optional list of field names that should be inspected for changes for all entries appearing in
+     *               both <em>source</em> and <em>target</em> collections. Defaults to all declared fields in hierarchy of class T
+     * @param <T>    the type of objects to be inspected. Must implement <code>equals()</code> and <code>hashCode()</code> to detect identical
+     * @return
+     */
+    public static <T> List<? extends Change> changes(final Collection<T> source, final Collection<T> target, final String... fields) {
+        final List<Change> changes = new LinkedList<>();
 
-        changes.addAll(findEvictedAndNewEntries(sourceCollection, targetCollection));
-        changes.addAll(findEntriesWithChangedPropertyValues(sourceCollection, targetCollection));
+        changes.addAll(findEvictedAndNewEntries(source, target));
+        final List<String> fieldList = (fields == null || fields.length == 0) ? new ArrayList<>() : Arrays.asList(fields);
+        changes.addAll(findEntriesWithChangedPropertyValues(source, target, fieldList));
 
         return changes;
     }
@@ -34,17 +46,17 @@ public final class AtomicChanges {
 
         for (T item : union) {
             if (!sourceCollection.contains(item)) {
-                changes.add(new Change.Addition(item));
+                changes.add(Change.entryAdded(item));
             }
             if (!targetCollection.contains(item)) {
-                changes.add(new Change.Deletion(item));
+                changes.add(Change.entryDeleted(item));
             }
         }
         return changes;
     }
 
 
-    private static <T> List<Change> findEntriesWithChangedPropertyValues(Collection<T> sourceCollection, Collection<T> targetCollection) {
+    private static <T> List<Change> findEntriesWithChangedPropertyValues(Collection<T> sourceCollection, Collection<T> targetCollection, Collection<String> includedFields) {
         final List<Change> changes = new LinkedList<>();
 
         final Collection<T> intersection = CollectionUtils.intersection(sourceCollection, targetCollection);
@@ -54,19 +66,24 @@ public final class AtomicChanges {
         final T next = intersection.iterator().next();
         final Class<?> declaringClass = next.getClass();
         List<Field> fields = getAllFields(new LinkedList<>(), next.getClass());
+        if (includedFields.isEmpty()) {
+            fields.forEach(field -> includedFields.add(field.getName()));
+        }
         try {
             for (T item : intersection) {
                 T source = IterableUtils.find(sourceCollection, new EqualToPredicate<>(item));
                 T target = IterableUtils.find(targetCollection, new EqualToPredicate<>(item));
                 DiffBuilder builder = new DiffBuilder(source, target, ToStringStyle.SHORT_PREFIX_STYLE, false);
                 for (Field field : fields) {
-                    field.setAccessible(true);
-                    builder.append(field.getName(), field.get(source), field.get(target));
+                    if (includedFields.contains(field.getName())) {
+                        field.setAccessible(true);
+                        builder.append(field.getName(), field.get(source), field.get(target));
+                    }
                 }
                 final DiffResult differences = builder.build();
                 if (differences.getNumberOfDiffs() > 0) {
                     for (Diff<?> diff : differences.getDiffs()) {
-                        changes.add(new Change.ChangeFieldValue(declaringClass.getSimpleName() + "." + diff.getFieldName()));
+                        changes.add(Change.propertyChange(item, declaringClass, diff.getFieldName(), diff.getLeft(), diff.getRight()));
                     }
                 }
             }

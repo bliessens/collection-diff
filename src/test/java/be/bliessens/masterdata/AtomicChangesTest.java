@@ -9,7 +9,7 @@ import java.util.List;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Collections.*;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class AtomicChangesTest {
 
@@ -21,8 +21,9 @@ public class AtomicChangesTest {
 
         final List<? extends Change> changes = AtomicChanges.changes(ABC, ABCD);
 
-        assertTrue(changes.size() == 1);
-        assertTrue("d".equals(changes.get(0).getSubject()));
+        assertThat(changes).hasSize(1);
+        assertThat(changes.get(0)).isInstanceOf(Change.Addition.class);
+        assertThat(changes.get(0).getSubject()).isEqualTo("d");
     }
 
     @Test
@@ -30,8 +31,8 @@ public class AtomicChangesTest {
 
         final List<? extends Change> changes = AtomicChanges.changes(emptyList(), singletonList("D"));
 
-        assertTrue(changes.size() == 1);
-        assertTrue("D".equals(changes.get(0).getSubject()));
+        assertThat(changes).hasSize(1);
+        assertThat(changes.get(0).getSubject()).isEqualTo("D");
     }
 
     @Test
@@ -39,8 +40,8 @@ public class AtomicChangesTest {
 
         final List<? extends Change> changes = AtomicChanges.changes(ABCD, ABC);
 
-        assertTrue(changes.size() == 1);
-        assertTrue("d".equals(changes.get(0).getSubject()));
+        assertThat(changes).hasSize(1);
+        assertThat(changes.get(0).getSubject()).isEqualTo("d");
     }
 
     @Test
@@ -48,8 +49,8 @@ public class AtomicChangesTest {
 
         final List<? extends Change> changes = AtomicChanges.changes(singletonList("last"), emptyList());
 
-        assertTrue(changes.size() == 1);
-        assertTrue("last".equals(changes.get(0).getSubject()));
+        assertThat(changes).hasSize(1);
+        assertThat(changes.get(0).getSubject()).isEqualTo("last");
     }
 
     @Test
@@ -60,15 +61,15 @@ public class AtomicChangesTest {
 
         final List<? extends Change> changes = AtomicChanges.changes(source, new HashBag(ABCD));
 
-        assertTrue(changes.size() == 1);
-        assertTrue("d".equals(changes.get(0).getSubject()));
+        assertThat(changes).hasSize(1);
+        assertThat(changes.get(0).getSubject()).isEqualTo("d");
     }
 
     @Test
     public void detectChangedFieldValue() throws Exception {
 
         final List<? extends Change> changes = AtomicChanges.changes(singleton(new ParentClass("id1", "benoit")), singleton(new ParentClass("id1", "bie")));
-        assertTrue(changes.size() == 1);
+        assertThat(changes).hasSize(1);
 
     }
 
@@ -76,15 +77,27 @@ public class AtomicChangesTest {
     public void detectChangedFieldValueInParentClass() throws Exception {
 
         final List<? extends Change> changes = AtomicChanges.changes(singleton(new SubClass("id1", "benoit", 3)), singleton(new SubClass("id1", "bie", 3)));
-        assertTrue(changes.size() == 1);
+        assertThat(changes).hasSize(1);
 
     }
 
     @Test
-    public void detectChangedFieldsClassHierarchy() throws Exception {
+    public void detectChangedFieldsInClassHierarchy() throws Exception {
 
         final List<? extends Change> changes = AtomicChanges.changes(singleton(new SubClass("id1", "benoit", 34)), singleton(new SubClass("id1", "bie", 35)));
-        assertTrue(changes.size() == 2);
+        assertThat(changes).hasSize(2);
+
+    }
+
+    @Test
+    public void inspectReferencedFieldsOnly() throws Exception {
+
+        List<? extends Change> changes = AtomicChanges.changes(singleton(new SubClass("id1", "benoit", 34)), singleton(new SubClass("id1", "bie", 35)), "name");
+        assertThat(changes).hasSize(1);
+        assertThat(Change.ChangeFieldValue.class.isInstance(changes.get(0)));
+
+        changes = AtomicChanges.changes(singleton(new SubClass("id1", "benoit", 34)), singleton(new SubClass("id1", "bie", 35)), "name", "age");
+        assertThat(changes).hasSize(2);
 
     }
 
@@ -133,31 +146,31 @@ public class AtomicChangesTest {
             this.age = age;
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            SubClass subClass = (SubClass) o;
-
-            return new EqualsBuilder()
-                    .appendSuper(super.equals(o))
-                    .append(age, subClass.age)
-                    .isEquals();
-        }
-
-        @Override
-        public int hashCode() {
-            return new HashCodeBuilder(17, 37)
-                    .appendSuper(super.hashCode())
-                    .append(age)
-                    .toHashCode();
-        }
+//        @Override
+//        public boolean equals(Object o) {
+//            if (this == o) {
+//                return true;
+//            }
+//
+//            if (o == null || getClass() != o.getClass()) {
+//                return false;
+//            }
+//
+//            SubClass subClass = (SubClass) o;
+//
+//            return new EqualsBuilder()
+//                    .appendSuper(super.equals(o))
+//                    .append(age, subClass.age)
+//                    .isEquals();
+//        }
+//
+//        @Override
+//        public int hashCode() {
+//            return new HashCodeBuilder(17, 37)
+//                    .appendSuper(super.hashCode())
+//                    .append(age)
+//                    .toHashCode();
+//        }
     }
 
 }
