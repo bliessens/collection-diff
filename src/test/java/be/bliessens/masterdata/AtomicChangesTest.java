@@ -26,7 +26,7 @@ public class AtomicChangesTest {
     }
 
     @Test
-    public void supportEmptyCollection() throws Exception {
+    public void supportEmptySourceCollection() throws Exception {
 
         final List<? extends Change> changes = AtomicChanges.changes(emptyList(), singletonList("D"));
 
@@ -44,7 +44,7 @@ public class AtomicChangesTest {
     }
 
     @Test
-    public void detectDeletedSingleton() throws Exception {
+    public void supportEmptyTargetCollection() throws Exception {
 
         final List<? extends Change> changes = AtomicChanges.changes(singletonList("last"), emptyList());
 
@@ -67,36 +67,48 @@ public class AtomicChangesTest {
     @Test
     public void detectChangedFieldValue() throws Exception {
 
-        final List<? extends Change> changes = AtomicChanges.changes(singleton(new Parent("id1", "benoit")), singleton(new Parent("id1", "bei")));
+        final List<? extends Change> changes = AtomicChanges.changes(singleton(new ParentClass("id1", "benoit")), singleton(new ParentClass("id1", "bie")));
         assertTrue(changes.size() == 1);
 
     }
-
 
     @Test
-    public void detectChangedFieldValueInSuperClass() throws Exception {
+    public void detectChangedFieldValueInParentClass() throws Exception {
 
-        final List<? extends Change> changes = AtomicChanges.changes(singleton(new Child("id1", "benoit")), singleton(new Child("id1", "bei")));
+        final List<? extends Change> changes = AtomicChanges.changes(singleton(new SubClass("id1", "benoit", 3)), singleton(new SubClass("id1", "bie", 3)));
         assertTrue(changes.size() == 1);
 
     }
 
-    private static class Parent {
+    @Test
+    public void detectChangedFieldsClassHierarchy() throws Exception {
+
+        final List<? extends Change> changes = AtomicChanges.changes(singleton(new SubClass("id1", "benoit", 34)), singleton(new SubClass("id1", "bie", 35)));
+        assertTrue(changes.size() == 2);
+
+    }
+
+    private static class ParentClass {
+
         private String id;
         private String name;
 
-        public Parent(String id, String name) {
+        public ParentClass(String id, String name) {
             this.id = id;
             this.name = name;
         }
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
+            if (this == o) {
+                return true;
+            }
 
-            if (o == null || getClass() != o.getClass()) return false;
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
 
-            Parent parent = (Parent) o;
+            ParentClass parent = (ParentClass) o;
 
             return new EqualsBuilder()
                     .append(id, parent.id)
@@ -112,9 +124,39 @@ public class AtomicChangesTest {
 
     }
 
-    private static class Child extends Parent {
-        public Child(String id, String name) {
+    private static class SubClass extends ParentClass {
+
+        private int age;
+
+        public SubClass(String id, String name, int age) {
             super(id, name);
+            this.age = age;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            SubClass subClass = (SubClass) o;
+
+            return new EqualsBuilder()
+                    .appendSuper(super.equals(o))
+                    .append(age, subClass.age)
+                    .isEquals();
+        }
+
+        @Override
+        public int hashCode() {
+            return new HashCodeBuilder(17, 37)
+                    .appendSuper(super.hashCode())
+                    .append(age)
+                    .toHashCode();
         }
     }
 

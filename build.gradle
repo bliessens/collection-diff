@@ -16,4 +16,5 @@ dependencies {
     compile 'com.google.guava:guava:16.0'
 
     testCompile 'junit:junit:4.12'
+    testCompile 'org.assertj:assertj-core:3.3.0'
 }

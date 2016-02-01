@@ -19,16 +19,16 @@ public final class AtomicChanges {
     AtomicChanges() {
     }
 
-    public static <T> List<? extends Change> changes(Collection<T> sourceCollection, Collection<T> targetCollection) {
+    public static <T> List<? extends Change> changes(final Collection<T> sourceCollection, final Collection<T> targetCollection) {
         List<Change> changes = new LinkedList<>();
 
-        changes.addAll(evictedAndNewEntries(sourceCollection, targetCollection));
-        changes.addAll(changedPropertyValues(sourceCollection, targetCollection));
+        changes.addAll(findEvictedAndNewEntries(sourceCollection, targetCollection));
+        changes.addAll(findEntriesWithChangedPropertyValues(sourceCollection, targetCollection));
 
         return changes;
     }
 
-    private static <T> List<Change> evictedAndNewEntries(Collection<T> sourceCollection, Collection<T> targetCollection) {
+    private static <T> List<Change> findEvictedAndNewEntries(Collection<T> sourceCollection, Collection<T> targetCollection) {
         final List<Change> changes = new LinkedList<>();
         final Collection<T> union = CollectionUtils.union(sourceCollection, targetCollection);
 
@@ -44,7 +44,7 @@ public final class AtomicChanges {
     }
 
 
-    private static <T> List<Change> changedPropertyValues(Collection<T> sourceCollection, Collection<T> targetCollection) {
+    private static <T> List<Change> findEntriesWithChangedPropertyValues(Collection<T> sourceCollection, Collection<T> targetCollection) {
         final List<Change> changes = new LinkedList<>();
 
         final Collection<T> intersection = CollectionUtils.intersection(sourceCollection, targetCollection);
