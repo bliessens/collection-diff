@@ -28,7 +28,7 @@ public final class AtomicChanges {
      * @param fields optional list of field names that should be inspected for changes for all entries appearing in
      *               both <em>source</em> and <em>target</em> collections. Defaults to all declared fields in hierarchy of class T
      * @param <T>    the type of objects to be inspected. Must implement <code>equals()</code> and <code>hashCode()</code> to detect identical
-     * @return
+     * @return list of detected <code>Change</code> objects
      */
     public static <T> List<? extends Change> changes(final Collection<T> source, final Collection<T> target, final String... fields) {
         final List<Change> changes = new LinkedList<>();
